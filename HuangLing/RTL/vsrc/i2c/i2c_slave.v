@@ -34,87 +34,80 @@ input sda_in;
 output sda_out;
 output[7:0] data;
 
-parameter sclt = 11'd500;
-parameter sclt_half = 11'd250;
-parameter slaveaddress = 8'b1010_0010; //地址
-parameter s0 = 'd0,s1 = 'd1,s2 = 'd2,s3 = 'd3,s4 = 'd4,s5 = 'd5,s6 = 'd6,s7 = 'd7;
+parameter slaveaddress = 8'b1010_0010; //address
+parameter S0_START = 'd0, S1_SDDR = 'd1, S2_COMPARE = 'd2, S3_RW = 'd3, S4_READ = 'd4, S5_WRITE = 'd5, S6_STOP = 'd6;
 
-wire scl_high_mid;    //scl高电平标志
-wire scl_low_mid;    //scl低电平标志
-
-reg[10:0] scl_cnt = 11'd0;
-reg[10:0] scl_cnt_half = 11'd0;
-reg[3:0] bitcount = 4'd0;//读取数据计数器
-reg[7:0] address = 8'b0000_0000;
-reg[7:0] data = 8'b0000_0000;
-reg[7:0] data1 = 8'b0000_0000;//数据
+reg[3:0] bitcount;//Read data counter
+reg[7:0] address;
+reg[7:0] data;
+reg[7:0] data1;//data
 reg[7:0] dataout = 8'b11001010;
-reg[3:0] state = 4'd0;
-reg rw = 1'b0;
-reg sda_out = 1'b1;
-reg start_stop = 1'b0;
-reg sda_in_last = 1'b0;
-reg pedge = 1'b0;
-reg nedge = 1'b1;
-reg scl_low_1st = 1'b0;
+reg[3:0] state, next_state;
+reg rw;
+reg sda_out;
+reg start_stop;
+reg sda_in_last;
+reg scl_last;
+reg pedge;
+reg nedge;
+reg scl_pedge;
+reg scl_nedge;
+reg scl_low_1st;
 
-always @(posedge clk or negedge rst_n)//数500到scl高电平中点
+always @(posedge clk or negedge rst_n)
 begin
     if(!rst_n)
-        scl_cnt <= 11'd0; 
-    else if(start_stop)   
-        begin
-            if(scl_cnt == sclt - 1'b1)
-                scl_cnt <= 11'd0;
-            else
-                scl_cnt <= scl_cnt + 1'b1;     
-        end
-    else
-        scl_cnt <= 11'd0;
-end
-
-always @(posedge clk or negedge rst_n)//先数250再数500到scl低电平中点
-begin
-    if(!rst_n)
-        scl_cnt_half <= 11'd0; 
-    else if(start_stop && !scl_low_1st) 
-        begin
-            if(scl_cnt_half == sclt_half - 1'b1)
-            begin
-                scl_cnt_half <= 11'd0;
-                scl_low_1st <= 1'b1;
-            end
-            else
-                scl_cnt_half <= scl_cnt_half + 1'b1;  
-        end
-    else if(start_stop && scl_low_1st)
-        begin
-            if(scl_cnt_half == sclt - 1'b1)
-            begin
-                scl_cnt_half <= 11'd0;
-                scl_low_1st <= 1'b1;
-            end
-            else
-                scl_cnt_half <= scl_cnt_half + 1'b1;  
-        end
+    begin
+        scl_last <= 1'b0;
+        scl_pedge <= 1'b0;
+        scl_nedge <= 1'b1;
+    end
     else
     begin
-        scl_cnt_half <= 11'd0;
-        scl_low_1st <= 1'b0;
+        scl_last <= scl;
+    	scl_pedge <= scl & ~scl_last;//Set 1 at the posedge scl
+    	scl_nedge <= scl | ~scl_last;//Set 0 at the negedge scl
     end
 end
 
-assign scl_high_mid = (scl_cnt == sclt - 1'b1) ? 1'b1 : 1'b0;//scl高电位中点
-assign scl_low_mid = (scl_cnt_half == sclt - 1'b1) ? 1'b1 : 1'b0;//scl低电位中点
-
-always @(posedge clk)
+always @(posedge clk or negedge rst_n)
 begin
-    sda_in_last <= sda_in;
-	pedge <= sda_in & ~sda_in_last;//sda_in上升沿置1
-	nedge <= sda_in | ~sda_in_last;//sda_in下降沿置0
+    if(!rst_n)
+    begin
+        sda_in_last <= 1'b0;
+        pedge <= 1'b0;
+        nedge <= 1'b1;
+    end
+    else
+    begin
+        sda_in_last <= sda_in;
+    	pedge <= sda_in & ~sda_in_last;//Set 1 at the posedge sda_in
+    	nedge <= sda_in | ~sda_in_last;//Set 0 at the negedge sda_in
+    end
 end
 
 always @(posedge clk or negedge rst_n)
+begin
+    if(!rst_n)
+    begin
+        state <= S0_START;
+        bitcount <= 4'd0;
+        address <= 8'b0000_0000;
+        data <= 8'b0000_0000;
+        data1 <= 8'b0000_0000;
+        rw <= 1'b0;
+        sda_out <= 1'b1;
+        start_stop <= 1'b0;
+        pedge <= 1'b0;
+        nedge <= 1'b1;
+        scl_pedge <= 1'b0;
+        scl_nedge <= 1'b1;
+    end
+    else
+        state <= next_state;
+end
+
+always @(state or scl or nedge or pedge or scl_pedge or scl_nedge)
 begin
     if(scl && !nedge)
     start_stop <= 1'b1;
@@ -124,35 +117,26 @@ begin
 
     else
     begin
-
-    if (!rst_n) begin
-        state = 4'd0;
-        start_stop <= 1'b0;
-        bitcount <= 5'd0;
-        data = 8'b0000_0000; 
-    end 
-    else
-    begin
         case (state) 
-            s0: begin //检测开始
-                    if(start_stop) begin state <= s1; end
-                    else           begin state <= s0; end
+            S0_START: begin //Detection start status
+                    if(start_stop) begin next_state  <= S1_SDDR; end
+                    else           begin next_state  <= S0_START; end
                 end
 
-            s1: begin //对比地址
-                    if(scl_high_mid)   
+            S1_SDDR: begin //Read the address
+                    if(scl_pedge)
                         begin
                             if (bitcount == 4'd8)
 							begin
                                 bitcount <= 4'd0;
                                 rw <= address[0];
-                                state <= s3;
+                                next_state  <= S3_RW;
                             end
                             else if(bitcount == 4'd7)
                             begin
                                 bitcount <= bitcount + 5'd1;
                                 address[7 - bitcount] <= sda_in;
-                                state <= s2; //读完地址去判断
+                                next_state  <= S2_COMPARE; //Read the address to S2_COMPARE
                             end
                             else
                             begin
@@ -161,32 +145,32 @@ begin
                             end
                         end
                     else
-                    state <= s1;
+                    next_state  <= S1_SDDR;
                 end
 					 
-			s2: begin//应答
-                    if(scl_low_mid)
+			S2_COMPARE: begin //Compare address
+                    if(!scl_nedge)
                     begin
-                        if(address[7:1] == slaveaddress[7:1]) begin sda_out <= 1'b0; state <= s1;    end
-			            else                                  begin start_stop <= 1'b0; state <= s0; end
+                        if(address[7:1] == slaveaddress[7:1]) begin sda_out <= 1'b0; next_state  <= S1_SDDR;    end
+			            else                                  begin start_stop <= 1'b0; next_state  <= S0_START; end
                     end
                     else
-			        state <= s2;
+			        next_state  <= S2_COMPARE;
 				end
 				 
-			s3: begin //判断读写
-			       if(rw == 1'b0) begin state <= s4; end
-                   else           begin state <= s5; end
+			S3_RW: begin //judge rw
+			       if(rw == 1'b0) begin next_state  <= S4_READ; end
+                   else           begin next_state  <= S5_WRITE; end
 				end
 			
-			s4: begin //从机读
-			        if(scl_high_mid)   
+			S4_READ: begin //slave read
+			        if(scl_pedge)   
                     begin
                         if (bitcount == 4'd8)
 						begin
                             bitcount <= 4'd0;
 							data <= data1;
-                            state <= s6;//去应答
+                            next_state  <= S6_STOP;
                         end
                         else
                         begin
@@ -195,16 +179,21 @@ begin
                         end
                     end
                     else
-                    state <= s4;
+                    next_state  <= S4_READ;
 				end
 				 
-			s5: begin //从机写
-			    	if(scl_low_mid)   
+			S5_WRITE: begin //slave write
+			    	if(!scl_nedge)   
                     begin
                         if (bitcount == 4'd8)
 						begin
                             bitcount <= 4'd0;
-                            state <= s6;//去应答
+                            if(!sda_in)
+                            begin
+                                sda_out <= 1'b0;//ack
+                                next_state  <= S6_STOP;
+                            end
+                            else next_state  <= S0_START;
                         end
                         else
                         begin
@@ -213,34 +202,23 @@ begin
                         end
                     end
                     else
-                    state <= s5;
+                    next_state  <= S5_WRITE;
 			    end
 				 
-			s6: begin//应答
-                    if(scl_low_mid)
-                    begin
-                        sda_out <= 1'b0;
-                        state <= s7;
-                    end
-                    else
-			        state <= s6;
-			    end
-
-            s7: begin
+            S6_STOP: begin
                     if (!start_stop)
                     begin
                         bitcount <= 4'd0;
                         data <= 8'b0;
-                        state <= s0;
+                        next_state  <= S0_START;
                     end
                     else
-                    state <= s7;
+                    next_state  <= S6_STOP;
                 end
-            default: state <= s0;
+            default: next_state  <= S0_START;
         endcase
     end
 
-    end
 end
 
 

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "bmp.h"
 
-/////////////////////8位图镜像翻转//////////////////////// 
+/////////////////////8-bit//////////////////////// 
 int main()
 {
 	FILE *fp = fopen("test.bmp", "rb");
@@ -16,18 +16,18 @@ int main()
 	int height = infoHead.bHeight;
 	int biCount = infoHead.bBitCount;
  
-	RgbQuad *fpc; //调色板
+	RgbQuad *fpc; //color palette
  
 	fpc = new RgbQuad[256];
 	fread(fpc, sizeof(RgbQuad), 256, fp);
  
-	unsigned char *fpb;//位图数据
-	int lineByte = width;//(width*biCount / 8 + 3) / 4 * 4;//每行字节数4
+	unsigned char *fpb;//bitmap information
+	int lineByte = (width*biCount / 8 + 3) / 4 * 4;//4 bytes per line
 	fpb = new unsigned char[lineByte*height];
 	fread(fpb, lineByte*height, 1, fp);
 	fclose(fp);
  
-	// 水平镜像
+	// Horizontal mirror
 	unsigned char*fpb1;
 	fpb1 = new unsigned char[lineByte*height];
 
@@ -36,25 +36,13 @@ int main()
 		for (int j = 0; j < width; ++j)
 		{
 			unsigned char *p1, *p2;
-			p1 = fpb + i*lineByte + (width - 1 - j);//镜像像素
-			p2 = fpb1 + i*lineByte + j;//原本像素
-			(*p2) = (*p1);//交换
+			p1 = fpb + i*lineByte + (width - 1 - j);//Mirror pixels
+			p2 = fpb1 + i*lineByte + j;//Original pixel
+			(*p2) = (*p1);//Exchange
 		}
 	}
-	
-    //垂直镜像
-	//for (int i = 0; i < height; ++i)
-	//{
-	//	for (int j = 0; j < width; ++j)
-	//	{
-	//		unsigned char *p1, *p2;
-	//		p1 = fpb + (height - 1 - i)*lineByte + j;//镜像像素
-	//		p2 = fpb1 + i*lineByte + j;//原本像素
-	//		(*p2) = (*p1);//交换
-	//	}
-	//}
 
-	// 写入文件
+	// write file
 	FILE *fpo = fopen("mirror.bmp", "wb");
 	if (fpo == 0)
 		return 0;

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "bmp.h"
 
-/////////////////////24位图水平镜像////////////////////////
+/////////////////////24-bit////////////////////////
 int main()
 {
 	FILE *fp = fopen("test2244.bmp", "rb");
@@ -16,13 +16,13 @@ int main()
 	int height = infoHead.bHeight;
 	int biCount = infoHead.bBitCount;
 
-	unsigned char *fpb;//位图数据
-	int lineByte = (width*biCount / 8 + 3) / 4 * 4;//每行字节数4
+	unsigned char *fpb;//bitmap information
+	int lineByte = (width*biCount / 8 + 3) / 4 * 4;//4 bytes per line
 	fpb = new unsigned char[lineByte*height];
 	fread(fpb, lineByte*height, 1, fp);
 	fclose(fp);
  
-	// 水平镜像
+	// Horizontal mirror
 	unsigned char*fpb1;
 	fpb1 = new unsigned char[lineByte*height];
 
@@ -33,15 +33,15 @@ int main()
 			unsigned char *p1,*p2;
 			for(int k = 0; k < 3; ++k)
 			{
-				p1 = fpb + i*lineByte + (lineByte + k - 3 - j);//镜像像素，化简
-			  //p1 = fpb + i*lineByte + (lineByte - 1 + k - 2 - j);化简前
-				p2 = fpb1 + i*lineByte + j + k;//原本像素
-			    (*p2) = (*p1);//交换
+				p1 = fpb + i*lineByte + (lineByte + k - 3 - j);//Mirror pixels，Simplification
+			  //p1 = fpb + i*lineByte + (lineByte - 1 + k - 2 - j);Before simplification
+				p2 = fpb1 + i*lineByte + j + k;//Original pixel
+			    (*p2) = (*p1);//Exchange
 			}
 		}
 	}
 
-	// 写入文件
+	// write file
 	FILE *fpo = fopen("mirror24.bmp", "wb");
 	if (fpo == 0)
 		return 0;

@@ -32,7 +32,7 @@ module division(
 parameter size = 4;
 parameter zero = {size{1'b0}};
 parameter size_2 = size * 2;
-parameter s0_expand = 'd0, s1_shift = 'd1, s2_compare = 'd2, s3_out = 'd3;
+parameter S0_EXPAND = 'd0, S1_SHIFT = 'd1, S2_COMPARE = 'd2, S3_OUT = 'd3;
 input clk, rst_n;
 input[size - 1 : 0] a, b;
 output[size - 1 : 0] o_shang, o_yushu;
@@ -48,7 +48,7 @@ always @(posedge clk or negedge rst_n)
 begin
     if(!rst_n)
     begin
-        state <= s0_expand;
+        state <= S0_EXPAND;
         o_shang = 'b0;
         o_yushu = 'b0;
         i <= 8'h00;
@@ -66,49 +66,49 @@ begin
     a_r <= a;
     b_r <= b;
     case(state)
-    s0_expand: begin
+    S0_EXPAND: begin
         a_long <= {zero, a};
         b_long <= {b, zero};
-        next_state <= s1_shift;
+        next_state <= S1_SHIFT;
     end
     
-    s1_shift: begin
+    S1_SHIFT: begin
         i <= i + 1'b1;
         if(i < size)
         begin
             a_long <= {a_long[size_2 - 2 : 0], 1'b0};
-            next_state <= s2_compare;
+            next_state <= S2_COMPARE;
         end
         else
-            next_state <= s3_out;
+            next_state <= S3_OUT;
     end
 
-    s2_compare: begin
+    S2_COMPARE: begin
         if(a_long[size_2 - 1 : size] >= b_r)
         begin
             a_long <= a_long - b_long + 1'b1;
-            next_state <= s1_shift;
+            next_state <= S1_SHIFT;
         end
         else
         begin
             a_long <= a_long;
-            next_state <= s1_shift;
+            next_state <= S1_SHIFT;
         end
     end
 
-    s3_out: begin
+    S3_OUT: begin
         o_shang <= a_long[size - 1 : 0];
         o_yushu <= a_long[size_2 - 1 : size];
         if((a_r != a) || (b_r != b))
         begin
-            next_state <= s0_expand;
+            next_state <= S0_EXPAND;
             i <= 8'h00;
         end
         else
-            next_state <= s3_out;
+            next_state <= S3_OUT;
     end
 
-    default: next_state <= s0_expand;
+    default: next_state <= S0_EXPAND;
     endcase
 end
 

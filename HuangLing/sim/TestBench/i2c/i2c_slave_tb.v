@@ -38,7 +38,8 @@ always #5000 scl = ~scl;
 always #10 clk = ~clk;
 initial
  begin
-    scl = 1;clk = 1;sda_in = 1;rst_n = 1;
+    scl = 1;clk = 1;sda_in = 1;rst_n = 0;
+    #5 rst_n = 1;
     #2500 sda_in = 0;//s
     #5000 sda_in = 1;
     #10000 sda_in = 0;

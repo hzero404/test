@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "bmp.h"
 
-///////////////////读信息//////////////////////
+///////////////////read message//////////////////////
 
 typedef unsigned short WORD;
 
@@ -16,11 +16,11 @@ int main()
 
 
     FILE *fp;
-//读
+
 	fp = fopen("test2244.bmp", "rb");
 	if (fp == 0)
 	{
-		printf("错\n");
+		printf("wrong\n");
 		while(1);
 		return 0;
 	}
@@ -30,13 +30,13 @@ int main()
 	fread(&bmpInfo, sizeof(bmpInfo), 1, fp);
 
 
-    //文件信息头
+    //File header
 	printf("文件标识符 = 0X%X\n",                            bmpFileHeader.bType);
 	printf("BMP 文件大小 = %d 字节\n",                       bmpFileHeader.bSize);
 	printf("保留值1 = %d \n",                                bmpFileHeader.bReserved1);
 	printf("保留值2 = %d \n",                                bmpFileHeader.bReserved2);
 	printf("文件头的最后到图像数据位开始的偏移量 = %d 字节\n",  bmpFileHeader.bOffset);
-    //位图信息头
+    //bitmap information
 	printf("信息头的大小 = %d 字节\n",                        bmpInfo.bInfoSize);
 	printf("位图的高度 = %d \n",                             bmpInfo.bHeight);
 	printf("位图的宽度 = %d \n",                             bmpInfo.bWidth);

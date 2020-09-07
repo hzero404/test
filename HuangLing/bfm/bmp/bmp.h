@@ -7,7 +7,7 @@ typedef unsigned short WORD;
 typedef unsigned long DWORD;
 #pragma  pack(1)
 
-//文件头
+//File header
 typedef struct BMP_FILE_HEADER
 {
 	WORD bType;
@@ -17,7 +17,7 @@ typedef struct BMP_FILE_HEADER
 	DWORD bOffset;
 } BMPFILEHEADER;
 
-//信息头
+//bitmap information
 typedef struct BMP_INFO
 {
 	DWORD bInfoSize;
