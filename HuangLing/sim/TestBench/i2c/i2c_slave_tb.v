@@ -32,7 +32,7 @@ i2c_slave u1(
     scl,
     sda_in,
     sda_out,
-    data,
+    data
     );
 always #5000 scl = ~scl;
 always #10 clk = ~clk;
@@ -58,6 +58,7 @@ initial
     #10000 sda_in = 1;
     #10000 sda_in = 1; 
     #10000 sda_in = 0;//data ae
+
     #10000 sda_in = 0;//ack
     #15000 sda_in = 1;//p
 
@@ -81,6 +82,9 @@ initial
     //#10000 sda_in = 1;
     //#10000 sda_in = 1; 
     //#10000 sda_in = 0;//data ae
+
+    //#10000 sda_in = 1;//ack
+    //#10000 sda_in = 1;//ack
     //#10000 sda_in = 0;//ack
     //#15000 sda_in = 1;//p
     
