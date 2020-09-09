@@ -62,27 +62,6 @@ initial
     #10000 sda_in = 0;//ack
     #15000 sda_in = 1;//p
 
-
-
-    //#10000 sda_in = 0;//s
-    //#5000 sda_in = 1;
-    //#10000 sda_in = 0;
-    //#10000 sda_in = 1;
-    //#10000 sda_in = 0;
-    //#10000 sda_in = 0;//
-    //#10000 sda_in = 0;
-    //#10000 sda_in = 1;//sddr 51
-    //#10000 sda_in = 0;//rw
-    //#10000 sda_in = 0;//ack
-    //#10000 sda_in = 1;
-    //#10000 sda_in = 0;
-    //#10000 sda_in = 1;
-    //#10000 sda_in = 0;
-    //#10000 sda_in = 1;
-    //#10000 sda_in = 1;
-    //#10000 sda_in = 1; 
-    //#10000 sda_in = 0;//data ae
-
     //#10000 sda_in = 1;//ack
     //#10000 sda_in = 1;//ack
     //#10000 sda_in = 0;//ack
