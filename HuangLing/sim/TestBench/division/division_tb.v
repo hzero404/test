@@ -23,35 +23,42 @@
 module division_tb;
 
 parameter size = 4;
+parameter DELAY = 100;
 reg clk, rst_n;
+reg start;
 reg[size - 1 : 0] a, b;
-wire[size - 1 : 0] o_shang, o_yushu;
+wire[size - 1 : 0] quotient, remainder;
 
 division u1(
     clk,
     rst_n,
+    start,
     a,
     b,
-    o_shang,
-    o_yushu
+    quotient,
+    remainder
     );
 
 always #10 clk = ~clk;
 
-initial  
+initial
 begin
-        clk = 1; rst_n = 0;
+        clk = 1; rst_n = 0; a = 'd0;  b = 'd0; start = 0;
     #10 rst_n = 1;
 
-        a = 'd8;  b = 'd5;
-          #500 $display(" %d  / %d  = %d  ... %d",a, b, o_shang, o_yushu); 
-    #500 a = 'd8;  b = 'd4;
-          #500 $display(" %d  / %d  = %d  ... %d",a, b, o_shang, o_yushu);
-    #500 a = 'd8;  b = 'd3;
-          #500 $display(" %d  / %d  = %d  ... %d",a, b, o_shang, o_yushu);
+    #500 start = 1; a = 'd8;  b = 'd4;
+    #40 start = 0;
+    #((size * 40) + DELAY) $display(" %d  / %d  = %d  ... %d",a, b, quotient, remainder);
+    //(2*size+7)*20
+    #500 start = 1; a = 'd8;  b = 'd3;
+    #40 start = 0;
+    #((size * 40) + DELAY) $display(" %d  / %d  = %d  ... %d",a, b, quotient, remainder);
+    #500 start = 1; a = 'd8;  b = 'd5;
+    #40 start = 0;
+    #((size * 40) + DELAY) $display(" %d  / %d  = %d  ... %d",a, b, quotient, remainder);
 
     #500 $finish;
 
-end  
+end 
 
 endmodule

@@ -23,135 +23,152 @@
 module division(
     clk,
     rst_n,
+    start,
     a,
     b,
-    o_shang,
-    o_yushu
+    quotient,
+    remainder
     );
 
 parameter size = 4;
 parameter zero = {size{1'b0}};
 parameter size_2 = size * 2;
-parameter S0_EXPAND = 'd0, S1_SHIFT = 'd1, S2_COMPARE = 'd2, S3_OUT = 'd3;
+parameter S0_START = 'd0, S1_EXPAND = 'd1, S2_SHIFT = 'd2, S3_COMPARE = 'd3, S4_OUT = 'd4;
+
 input clk, rst_n;
-input[size - 1 : 0] a, b;
-output[size - 1 : 0] o_shang;
-output[size - 1 : 0] o_yushu;
+input start;
+input[size - 1 : 0] a;//dividend
+input[size - 1 : 0] b;//divisor
+output[size - 1 : 0] quotient;
+output[size - 1 : 0] remainder;
 
 reg[7:0] i;
 reg[3:0] state, next_state;
 reg[size_2 - 1 : 0] a_long;
 reg[size_2 - 1 : 0] b_long;
-reg[size - 1 : 0] o_shang;
-reg[size - 1 : 0] o_yushu;
-reg[size - 1 : 0] a_r;
-reg[size - 1 : 0] b_r;
+reg[size - 1 : 0] quotient;
+reg[size - 1 : 0] remainder;
+reg done, start_last, start_pedge;
+
+always @(posedge clk or negedge rst_n)//Use the "posedge start" as the start signal
+begin
+    if(!rst_n)
+    begin
+        start_last <= 1'b0;
+        start_pedge <= 1'b0;
+    end
+    else
+    begin
+        start_last <= start;
+        start_pedge <= start & ~start_last;//Set 1 at the posedge start
+    end
+end
 
 always @(posedge clk or negedge rst_n)//Finite State
 begin
     if(!rst_n)
-    begin
-        state <= S0_EXPAND;
-    end
+        state <= S0_START;
     else
         state <= next_state;
 end
 
 
 
-always @(state or a or b or i or a_long or a_r or b_r)//Next state logic
+always @(state or a or b or i or a_long or done)//Next state logic
 begin
     case(state)
-    S0_EXPAND: begin
-        next_state = S1_SHIFT;
-    end
-    
-    S1_SHIFT: begin
-        if(i < size)
-        begin
-            next_state = S2_COMPARE;
-        end
-        else
-        begin
-            next_state = S3_OUT;
-        end
-    end
+    S0_START:
+            begin
+                if(!done)//When done becomes 0, it means division begins
+                    next_state = S1_EXPAND;
+                else
+                    next_state = S0_START;
+            end
 
-    S2_COMPARE: begin
-        if(a_long[size_2 - 1 : size] >= b_r)
-        begin
-            next_state = S1_SHIFT;
-        end
-        else
-            next_state = S1_SHIFT;
-    end
+    S1_EXPAND:
+            begin
+                next_state = S2_SHIFT;
+            end
 
-    S3_OUT: begin
-        if((a_r != a) || (b_r != b))
-        begin
-            next_state = S0_EXPAND;
-        end
-        else
-        begin
-            next_state = S3_OUT;
-        end
-    end
+    S2_SHIFT:
+            begin
+                if(i < size)
+                    next_state = S3_COMPARE;
+                else
+                    next_state = S4_OUT;
+            end
 
-    default: begin next_state = 4'bx; end
+    S3_COMPARE:
+            begin
+                if(a_long[size_2 - 1 : size] >= b)
+                    next_state = S2_SHIFT;
+                else
+                    next_state = S2_SHIFT;
+            end
+
+    S4_OUT:
+            begin
+                next_state = S0_START;
+            end
+
+    default: next_state = 4'bx;
     endcase
 end
+
+
 
 always @(posedge clk or negedge rst_n)//Output Logic
 begin
     if(!rst_n)
     begin
-        o_shang <= 'b0;
-        o_yushu <= 'b0;
-        a_r <= {size{1'b0}};
-        b_r <= {size{1'b0}};
+        quotient <= 'b0;
+        remainder <= 'b0;
         a_long <= {size_2{1'b0}};
         b_long <= {size_2{1'b0}};
         i <= 8'h00;
+        done <= 1'b1;
     end
     else
     begin
-    a_r <= a;
-    b_r <= b;
         case(state)
-        S0_EXPAND: begin
-            a_long <= {zero, a};
-            b_long <= {b, zero};
-        end
+        S0_START:
+                begin
+                    if(start_pedge)//If you press start, set "done" to 0
+                        done <= 1'b0;
+                end
+
+        S1_EXPAND:
+                begin
+                    a_long <= {zero, a};
+                    b_long <= {b, zero};
+                end
     
-        S1_SHIFT: begin
-            i <= i + 1'b1;
-            if(i < size)
-            begin
-                a_long <= {a_long[size_2 - 2 : 0], 1'b0};
-            end
-            else
-            begin
-                i <= 8'h00;
-            end
-        end
+        S2_SHIFT:
+                begin
+                    i <= i + 1'b1;
+                    if(i < size)
+                        a_long <= {a_long[size_2 - 2 : 0], 1'b0};
+                    else
+                        i <= 8'h00;
+                end
     
-        S2_COMPARE: begin
-            if(a_long[size_2 - 1 : size] >= b_r)
-            begin
-                a_long <= a_long - b_long + 1'b1;
-            end
-            else
-                a_long <= a_long;
-        end
+        S3_COMPARE:
+                begin
+                    if(a_long[size_2 - 1 : size] >= b)
+                        a_long <= a_long - b_long + 1'b1;
+                end
     
-        S3_OUT: begin
-            o_shang <= a_long[size - 1 : 0];
-            o_yushu <= a_long[size_2 - 1 : size];
-        end
+        S4_OUT:
+                begin
+                    done <= 1'b1;
+                    quotient <= a_long[size - 1 : 0];
+                    remainder <= a_long[size_2 - 1 : size];
+                end
+        
         default:
         begin
-            o_shang <= 'b0;
-            o_yushu <= 'b0;
+            quotient <= 'b0;
+            remainder <= 'b0;
         end
         endcase
     end

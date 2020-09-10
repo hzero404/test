@@ -67,8 +67,8 @@ begin
     else
     begin
         scl_last <= scl;
-    	scl_pedge <= scl & ~scl_last;//Set 1 at the posedge scl
-    	scl_nedge <= scl | ~scl_last;//Set 0 at the negedge scl
+        scl_pedge <= scl & ~scl_last;//Set 1 at the posedge scl
+        scl_nedge <= scl | ~scl_last;//Set 0 at the negedge scl
         scl_nedge_next <= scl_nedge;
     end
 end
@@ -84,17 +84,15 @@ begin
     else
     begin
         sda_in_last <= sda_in;
-    	pedge <= sda_in & ~sda_in_last;//Set 1 at the posedge sda_in
-    	nedge <= sda_in | ~sda_in_last;//Set 0 at the negedge sda_in
+        pedge <= sda_in & ~sda_in_last;//Set 1 at the posedge sda_in
+        nedge <= sda_in | ~sda_in_last;//Set 0 at the negedge sda_in
     end
 end
 
 always @(posedge clk or negedge rst_n) //Finite State
 begin
     if(!rst_n)
-    begin
         state <= S0_START;
-    end
     else
         state <= next_state;
 end
@@ -106,13 +104,9 @@ begin
         S0_START:
                 begin //Detection start status
                     if(start_stop)
-                    begin 
                         next_state = S1_SDDR;
-                    end
                     else
-                    begin
                         next_state = S0_START;
-                    end
                 end
     
         S1_SDDR:
@@ -120,20 +114,14 @@ begin
                     if(scl_pedge)
                     begin
                         if (bitcount == 4'd8)
-                        begin
                             next_state = S3_RW;
-                        end
                         else if(bitcount == 4'd7)
-                        begin
                             next_state = S2_COMPARE; //Read the address to S2_COMPARE
-                        end
                         else
-                        begin
                             next_state = S1_SDDR;
-                        end
                     end
                     else
-                    next_state = S1_SDDR;
+                        next_state = S1_SDDR;
                 end
     
         S2_COMPARE:
@@ -141,13 +129,9 @@ begin
                     if(!scl_nedge_next)
                     begin
                         if(address[7:1] == slaveaddress[7:1])
-                        begin
                             next_state = S1_SDDR;
-                        end
-                            else
-                        begin
+                        else
                             next_state = S0_START;
-                        end
                     end
                     else
                         next_state = S2_COMPARE;
@@ -156,13 +140,9 @@ begin
         S3_RW:
                 begin //judge rw
                     if(rw == 1'b0)
-                    begin
                        next_state = S4_READ;
-                    end
                     else
-                    begin
                        next_state = S5_WRITE;
-                    end
                 end
     
         S4_READ:
@@ -170,16 +150,12 @@ begin
                 if(scl_pedge)   
                 begin
                     if (bitcount == 4'd8)
-                    begin
                         next_state = S6_STOP;
-                    end
                     else
-                    begin
                         next_state = S4_READ;
-                    end
                 end
                 else
-                next_state = S4_READ;
+                    next_state = S4_READ;
             end
     
         S5_WRITE:
@@ -189,28 +165,23 @@ begin
                         if (bitcount == 4'd8)
                         begin
                             if(!sda_in)
-                            begin
                                 next_state = S7_MASTER_ACK;
-                            end
-                            else next_state = S0_START;
+                            else
+                                next_state = S0_START;
                         end
                         else
-                        begin
                             next_state = S5_WRITE;
-                        end
                     end
                     else
-                    next_state = S5_WRITE;
+                        next_state = S5_WRITE;
                 end
     
         S6_STOP:
                 begin
                     if (!start_stop)
-                    begin
                         next_state = S0_START;
-                    end
                     else
-                    next_state = S6_STOP;
+                        next_state = S6_STOP;
                 end
     
         S7_MASTER_ACK:
@@ -275,13 +246,9 @@ begin
                         if(!scl_nedge_next)
                         begin
                             if(address[7:1] == slaveaddress[7:1])
-                            begin
                                 sda_out <= 1'b0;
-                            end
                             else
-                            begin
                                 start_stop <= 1'b0;
-                            end
                         end
                     end
                 	 
@@ -310,9 +277,7 @@ begin
                             begin
                                 bitcount <= 4'd0;
                                 if(!sda_in)
-                                begin
                                     sda_out <= 1'b0;//ack
-                                end
                             end
                             else
                             begin
